@@ -40,8 +40,8 @@ public class ProcessesPaneUI : Form
         this.AutoScaleDimensions = new SizeF(7F, 15F);
         this.AutoScaleMode = AutoScaleMode.Font;
         this.ClientSize = new Size(400, 800);
-        this.Name = "StaxBar";
-        this.Text = "StaxBar";
+        this.Name = "StaxBar11";
+        this.Text = "StaxBar11";
         this.AutoScroll = true;
         //this.SetStyle(ControlStyles.
         this.FormBorderStyle = FormBorderStyle.SizableToolWindow;
