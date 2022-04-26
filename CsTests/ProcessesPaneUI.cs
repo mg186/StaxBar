@@ -10,7 +10,9 @@ public class ProcessesPaneUI : Form
 
     private List<Button> btnProcesses = new List<Button>();
 
-    ProcessesService processesService = new ProcessesService();
+    private ProcessesService processesService = new ProcessesService();
+
+    private Button startButton;
 
     public ProcessesPaneUI()
     {
@@ -29,6 +31,8 @@ public class ProcessesPaneUI : Form
         }
         base.Dispose(disposing);
     }
+
+    protected int ItemHeight => 30;
 
 
     /// <summary>
@@ -49,6 +53,28 @@ public class ProcessesPaneUI : Form
         ProcessInfo[] processes = this.processesService.GetApplications();
 
         int counter = 0;
+
+        startButton = new Button();
+        //button.Location = new System.Drawing.Point(5 + (500 * (counter % 3)), (counter / 3) * 60);
+        startButton.Location = new Point(0, counter * ItemHeight);
+        startButton.Name = $"btnStart";
+        startButton.Size = new Size(350, ItemHeight);
+        startButton.Margin = new Padding(0);
+        startButton.TabIndex = 0;
+        startButton.Text = "START";
+
+        startButton.UseVisualStyleBackColor = true;
+        startButton.Click += new System.EventHandler((object sender, EventArgs e) =>
+        {
+            Win32Helpers.ShowStartMenu();
+        });
+
+        startButton.TextAlign = ContentAlignment.MiddleLeft;
+
+        startButton.Padding = new Padding(0, 0, 0, 0);
+
+        this.Controls.Add(startButton);
+
         foreach (ProcessInfo process in processes)
         {
             foreach (var window in process.windows)
@@ -56,60 +82,6 @@ public class ProcessesPaneUI : Form
                 if (string.IsNullOrWhiteSpace(window.WinTitle))
                     continue;
 
-                /*
-                // TODO: Peut-on éliminer ces patches?
-                if (process.title == "Switch USB")
-                    continue;
-
-                if (process.processName == "RtWlan")
-                    continue;
-
-                if (window.WinTitle.StartsWith("MSCTFIME"))
-                    continue;
-
-                if (window.WinTitle == "Default IME")
-                    continue;
-
-                if (window.WinTitle == "MediaContextNotificationWindow")
-                    continue;
-
-                if (window.WinTitle == "Microsoft Text Input Application")
-                    continue;
-
-                if (window.WinTitle == "SystemResourceNotifyWindow")
-                    continue;
-
-                if (window.WinTitle == "Hidden Window")
-                    continue;
-
-                if (window.WinTitle == "CiceroUIWndFrame")
-                    continue;
-
-                if (window.WinTitle == "VCL ImplGetDefaultWindow")
-                    continue;
-
-                if (window.WinTitle.StartsWith("GDI+ Window"))
-                    continue;
-
-                if (window.WinTitle == "DDE Server Window")
-                    continue;
-
-                if (window.WinTitle.StartsWith(".NET-BroadcastEventWindow"))
-                    continue;
-
-                if (window.WinTitle == "SleepDetectorServiceWindowClass")
-                    continue;
-
-                if (window.WinTitle == "NVIDIA GeForce Overlay")
-                    continue;
-
-                if (window.WinTitle == "Visual Studio Application Management Window")
-                    continue;
-
-                if (process.processName == "ApplicationFrameHost")
-                    continue;
-                
-                */
                 if (window.toolWindow && !window.appWindow)
                     continue;
 
@@ -131,7 +103,6 @@ public class ProcessesPaneUI : Form
                 if (!window.visible && !window.appWindow)
                     continue;
 
-
                 /*
                 DETERMINE IF WINDOW HAS TASKBAR BUTTON
                 Toplevel window
@@ -141,10 +112,9 @@ public class ProcessesPaneUI : Form
                  */
 
                 var button = new System.Windows.Forms.Button();
-                //button.Location = new System.Drawing.Point(5 + (500 * (counter % 3)), (counter / 3) * 60);
-                button.Location = new System.Drawing.Point(0, counter * 30);
+                button.Location = new System.Drawing.Point(0, counter * ItemHeight);
                 button.Name = $"btnProcess_{counter}";
-                button.Size = new System.Drawing.Size(350, 30);
+                button.Size = new System.Drawing.Size(350, ItemHeight);
                 button.TabIndex = 0;
                 button.Text = window.WinTitle;
                 

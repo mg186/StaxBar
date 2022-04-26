@@ -14,17 +14,20 @@ namespace StaxBar
         [DllImport("User32.dll")]
         private static extern bool SetForegroundWindow(IntPtr hWnd);
 
-        [System.Runtime.InteropServices.DllImport("User32.dll")]
+        [DllImport("User32.dll")]
         private static extern bool ShowWindow(IntPtr handle, int nCmdShow);
 
-        [System.Runtime.InteropServices.DllImport("User32.dll")]
+        [DllImport("User32.dll")]
         private static extern bool IsIconic(IntPtr handle);
 
         [DllImport("user32.dll", EntryPoint = "GetWindowLongPtr")]
         private static extern IntPtr GetWindowLongPtr(IntPtr hWnd, int nIndex);
 
-        const int SW_RESTORE = 9;
+        [DllImport("user32.dll", SetLastError = true)]
+        public static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
 
+        [DllImport("user32.dll", SetLastError = true)]
+        public static extern bool MoveWindow(IntPtr hWnd, int x, int y, int nWidth, int nHeight, bool bRepaint);
 
         [DllImport("User32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -35,6 +38,36 @@ namespace StaxBar
 
         [DllImport("user32.dll", SetLastError = true)]
         static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
+
+        [DllImport("User32.dll")]
+        public static extern IntPtr GetWindow(IntPtr hWnd, uint uCmd);
+
+        /// <summary>
+        /// Retrieves the handle to the ancestor of the specified window.
+        /// </summary>
+        /// <param name="hwnd">A handle to the window whose ancestor is to be retrieved.
+        /// If this parameter is the desktop window, the function returns NULL. </param>
+        /// <param name="flags">The ancestor to be retrieved.</param>
+        /// <returns>The return value is the handle to the ancestor window.</returns>
+        [DllImport("user32.dll", ExactSpelling = true)]
+        static extern IntPtr GetAncestor(IntPtr hwnd, uint flags);
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr SetWinEventHook(uint eventMin, uint eventMax, IntPtr
+            hmodWinEventProc, WinEventDelegate lpfnWinEventProc, uint idProcess,
+            uint idThread, uint dwFlags);
+
+        [DllImport("user32.dll")]
+        public static extern bool UnhookWinEvent(IntPtr hWinEventHook);
+
+        [DllImport("User32")]
+        private static extern int keybd_event(Byte bVk, Byte bScan, long dwFlags, long dwExtraInfo);
+
+        private const byte UP = 2;
+        private const byte CTRL = 17;
+        private const byte ESC = 27;
+
+        const int SW_RESTORE = 9;
 
         const long WS_EX_APPWINDOW = 0x00040000L;
 
@@ -57,18 +90,6 @@ namespace StaxBar
         const long WS_VISIBLE = 0x10000000L;
 
         public const uint GW_OWNER = 4;
-        [System.Runtime.InteropServices.DllImport("User32.dll")]
-        public static extern IntPtr GetWindow(IntPtr hWnd, uint uCmd);
-
-        /// <summary>
-        /// Retrieves the handle to the ancestor of the specified window.
-        /// </summary>
-        /// <param name="hwnd">A handle to the window whose ancestor is to be retrieved.
-        /// If this parameter is the desktop window, the function returns NULL. </param>
-        /// <param name="flags">The ancestor to be retrieved.</param>
-        /// <returns>The return value is the handle to the ancestor window.</returns>
-        [DllImport("user32.dll", ExactSpelling = true)]
-        static extern IntPtr GetAncestor(IntPtr hwnd, uint flags);
 
         private const uint GA_PARENT = 1; // Retrieves the parent window.This does not include the owner, as it does with the GetParent function.
 
@@ -82,13 +103,6 @@ namespace StaxBar
 
         public delegate void WinEventDelegate(IntPtr hWinEventHook, uint eventType, IntPtr hwnd,
             int idObject, int idChild, uint dwEventThread, uint dwmsEventTime);
-
-        [DllImport("user32.dll")]
-        public static extern IntPtr SetWinEventHook(uint eventMin, uint eventMax, IntPtr
-            hmodWinEventProc, WinEventDelegate lpfnWinEventProc, uint idProcess,
-            uint idThread, uint dwFlags);
-        [DllImport("user32.dll")]
-        public static extern bool UnhookWinEvent(IntPtr hWinEventHook);
 
         public static void BringToFront(int idProcess, IntPtr handle)
         {
@@ -171,6 +185,24 @@ namespace StaxBar
             return _WinStructList;
         }
 
+
+        public static void ShowStartMenu()
+        {
+            // Press Ctrl-Esc key to open Start menu
+            keybd_event(CTRL, 0, 0, 0);
+            keybd_event(ESC, 0, 0, 0);
+
+            // Need to Release those two keys
+            keybd_event(CTRL, 0, UP, 0);
+            keybd_event(ESC, 0, UP, 0);
+
+            /*
+            int ShowCmd = 5;
+            MoveWindow(FindWindow("DV2ControlHost", "Start menu"), 0, 0, 500, 500, false);
+            ShowWindow(FindWindow("DV2ControlHost", "Start menu"), ShowCmd);
+            */
+        }
+
         /*
         public void GetProcesses()
         {
@@ -186,4 +218,7 @@ namespace StaxBar
 
 
     }
+
+
+
 }

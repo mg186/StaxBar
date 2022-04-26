@@ -98,8 +98,8 @@ public class ProcessesService
             }
         }
 
-        string json = JsonConvert.SerializeObject(result, Formatting.Indented);
-        Debug.WriteLine(json);
+        string json = JsonConvert.SerializeObject(result); //, Formatting.Indented);
+        Debug.WriteLine("[GetApplications] result = " + json);
 
         //Debug.WriteLine("======== remainingWindows =========");
         //string remainingWindows = JsonConvert.SerializeObject(windowsByProcess, Formatting.Indented);
