@@ -150,6 +150,43 @@ public class ProcessesService
         */
     }
 
+    public IEnumerable<(ProcessInfo processInfo, WinStruct window)> GetTopLevelWindows()
+    {
+        ProcessInfo[] processes = this.GetApplications();
+
+        foreach (ProcessInfo process in processes)
+        {
+            foreach (var window in process.windows)
+            {
+                if (string.IsNullOrWhiteSpace(window.WinTitle))
+                    continue;
+
+                if (window.toolWindow && !window.appWindow)
+                    continue;
+
+                if (window.noactivate && !window.appWindow)
+                    continue;
+
+                if (window.child && !window.appWindow)
+                    continue;
+
+                if (window.hasowner && !window.appWindow)
+                    continue;
+
+                if (!window.isTopLevel && !window.appWindow)
+                    continue;
+
+                if (!window.tabStop && !window.appWindow && !window.dlgFrame && !window.caption)
+                    continue;
+
+                if (!window.visible && !window.appWindow)
+                    continue;
+
+                yield return (process, window);
+            }
+        }
+    }
+
     
 
 }

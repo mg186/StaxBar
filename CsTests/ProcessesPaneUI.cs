@@ -3,16 +3,10 @@
 public class ProcessesPaneUI : Form
 {
 
-    /// <summary>
-    ///  Required designer variable.
-    /// </summary>
-    private System.ComponentModel.IContainer components = null;
-
-    private List<Button> btnProcesses = new List<Button>();
-
     private ProcessesService processesService = new ProcessesService();
 
-    private Button startButton;
+
+    private (ProcessInfo, WinStruct)[] processWindows = new (ProcessInfo, WinStruct)[0];
 
     public ProcessesPaneUI()
     {
@@ -25,15 +19,23 @@ public class ProcessesPaneUI : Form
     /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
     protected override void Dispose(bool disposing)
     {
-        if (disposing && (components != null))
-        {
-            components.Dispose();
-        }
         base.Dispose(disposing);
     }
 
-    protected int ItemHeight => 30;
+    protected int ItemHeight => 25;
+    protected int IconWidth => 20;
+    protected int IconHeight => 20;
+    protected int MarginLeft => 10;
+    protected int MarginTop => 10;
+    protected int FontSize => 11;
+    protected Color TextColor => Color.Black;
+    protected string FontName => "Arial";
 
+
+    private void UpdateProcessList()
+    {
+        this.processWindows = this.processesService.GetTopLevelWindows().ToArray();
+    }
 
     /// <summary>
     ///  Required method for Designer support - do not modify
@@ -47,116 +49,72 @@ public class ProcessesPaneUI : Form
         this.Name = "StaxBar11";
         this.Text = "StaxBar11";
         this.AutoScroll = true;
-        //this.SetStyle(ControlStyles.
         this.FormBorderStyle = FormBorderStyle.SizableToolWindow;
 
-        ProcessInfo[] processes = this.processesService.GetApplications();
+        UpdateProcessList();
 
-        int counter = 0;
-
-        startButton = new Button();
-        //button.Location = new System.Drawing.Point(5 + (500 * (counter % 3)), (counter / 3) * 60);
-        startButton.Location = new Point(0, counter * ItemHeight);
-        startButton.Name = $"btnStart";
-        startButton.Size = new Size(350, ItemHeight);
-        startButton.Margin = new Padding(0);
-        startButton.TabIndex = 0;
-        startButton.Text = "START";
-
-        startButton.UseVisualStyleBackColor = true;
-        startButton.Click += new System.EventHandler((object sender, EventArgs e) =>
-        {
-            Win32Helpers.ShowStartMenu();
-        });
-
-        startButton.TextAlign = ContentAlignment.MiddleLeft;
-
-        startButton.Padding = new Padding(0, 0, 0, 0);
-
-        this.Controls.Add(startButton);
-
-        foreach (ProcessInfo process in processes)
-        {
-            foreach (var window in process.windows)
-            {
-                if (string.IsNullOrWhiteSpace(window.WinTitle))
-                    continue;
-
-                if (window.toolWindow && !window.appWindow)
-                    continue;
-
-                if (window.noactivate && !window.appWindow)
-                    continue;
-
-                if (window.child && !window.appWindow)
-                    continue;
-
-                if (window.hasowner && !window.appWindow)
-                    continue;
-
-                if (!window.isTopLevel && !window.appWindow)
-                    continue;
-
-                if (!window.tabStop && !window.appWindow && !window.dlgFrame && !window.caption)
-                    continue;
-
-                if (!window.visible && !window.appWindow)
-                    continue;
-
-                /*
-                DETERMINE IF WINDOW HAS TASKBAR BUTTON
-                Toplevel window
-                WS_EX_APPWINDOW -> taskbar, no matter the other styles!
-                OWNER must be NULL (GetWindow(window, GW_OWNER))
-                no: WS_EX_NOACTIVATE or WS_EX_TOOLWINDOW:
-                 */
-
-                var button = new System.Windows.Forms.Button();
-                button.Location = new System.Drawing.Point(0, counter * ItemHeight);
-                button.Name = $"btnProcess_{counter}";
-                button.Size = new System.Drawing.Size(350, ItemHeight);
-                button.TabIndex = 0;
-                button.Text = window.WinTitle;
-                
-                /*
-                button.Text = window.WindowHandle + " p[" + process.processName + "] t[" + process.title
-                    + "]\r\nw[" + window.WinTitle + "] tw:" + (window.toolWindow ? "1" : "0")
-                    + " noa:" + (window.noactivate ? "1" : "0")
-                    + " chld:" + (window.child ? "1" : "0")
-                    + " own:" + (window.hasowner ? "1" : "0")
-                    + " aw:" + (window.appWindow ? "1" : "0")
-                    + " tlv:" + (window.isTopLevel ? "1" : "0")
-                    + " cpt:" + (window.caption ? "1" : "0")
-                    + " dgf:" + (window.dlgFrame ? "1" : "0")
-                    + " dbl:" + (window.disabled ? "1" : "0")
-                    + " tsp:" + (window.tabStop ? "1" : "0")
-                    + " vbl:" + (window.visible ? "1" : "0");*/
-                button.TextAlign = System.Drawing.ContentAlignment.TopLeft;
-                button.UseVisualStyleBackColor = true;
-                button.Click += new System.EventHandler((object sender, EventArgs e) =>
-                {
-                    this.processesService.BringToFront(process.idProcess, window.WindowHandle);
-                });
-
-                if (process.ico != null)
-                {
-                    button.Image = process.ico.ToBitmap();
-                    button.ImageAlign = ContentAlignment.MiddleLeft;
-                    button.TextImageRelation = TextImageRelation.ImageBeforeText;
-                }
-
-                button.TextAlign = ContentAlignment.MiddleLeft;
-
-                button.Padding = new Padding(0, 0, 0, 0);
-
-                this.Controls.Add(button);
-                this.btnProcesses.Add(button);
-
-                counter++;
-            }
-        }
+        this.Click += ProcessesPaneUI_Click;
 
         this.ResumeLayout(false);
+
+    }
+
+    private void ProcessesPaneUI_Click(object? sender, EventArgs e)
+    {
+        MouseEventArgs mouseEvent = (MouseEventArgs)e;
+        int shiftedY = (mouseEvent.Y - this.MarginTop - this.ItemHeight);
+        if (shiftedY < 0)
+        {
+            Win32Helpers.ShowStartMenu();
+        }
+        else
+        {
+            int index = shiftedY / this.ItemHeight;
+
+            if (index >= 0 && index < this.processWindows.Length)
+            {
+                (ProcessInfo process, WinStruct window) = this.processWindows[index];
+                this.processesService.BringToFront(process.idProcess, window.WindowHandle);
+            }
+        }
+    }
+
+    public void RefreshData()
+    {
+        this.Invoke((MethodInvoker)delegate
+        {
+            UpdateProcessList();
+
+            this.Refresh();
+        });
+    }
+
+    protected override void OnPaint(PaintEventArgs e)
+    {
+        base.OnPaint(e);
+
+        var font = new Font(this.FontName, this.FontSize);
+        var brush = new SolidBrush(this.TextColor);
+
+        int startY = this.MarginTop;
+        var startCoord = new PointF(this.MarginLeft + this.IconWidth + this.MarginLeft, startY);
+        e.Graphics.DrawString("== START ==", font, brush, startCoord);
+
+        int i = 1;
+        foreach ((ProcessInfo process, WinStruct window) in this.processWindows)
+        {
+            int y = this.MarginTop + i * this.ItemHeight;
+            var coord = new PointF(this.MarginLeft + this.IconWidth + this.MarginLeft, y);
+            e.Graphics.DrawString(window.WinTitle, font, brush, coord);
+
+            if (process.ico != null)
+            {
+                Bitmap image = process.ico.ToBitmap();
+                e.Graphics.DrawIcon(process.ico, new Rectangle(this.MarginLeft, y, this.IconWidth, this.IconHeight));
+            }
+
+            i++;
+        }
 
     }
 
