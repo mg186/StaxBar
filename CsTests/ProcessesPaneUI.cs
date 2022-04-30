@@ -37,6 +37,19 @@ public class ProcessesPaneUI : Form
         this.processWindows = this.processesService.GetTopLevelWindows().ToArray();
     }
 
+    // TODO: ce hash a un risque de collision élevé
+    private int HashWindows()
+    {
+        int hash = 0;
+        foreach ((var process, var window) in this.processWindows)
+        {
+            hash = (hash * 47) ^ process.idProcess;
+            hash = (hash * 97) ^ window.WindowHandle.GetHashCode();
+        }
+
+        return hash;
+    }
+
     /// <summary>
     ///  Required method for Designer support - do not modify
     ///  the contents of this method with the code editor.
@@ -83,9 +96,14 @@ public class ProcessesPaneUI : Form
     {
         this.Invoke((MethodInvoker)delegate
         {
+            int hashBefore = HashWindows();
             UpdateProcessList();
+            int hashAfter = HashWindows();
 
-            this.Refresh();
+            if (hashAfter != hashBefore)
+            {
+                this.Refresh();
+            }
         });
     }
 

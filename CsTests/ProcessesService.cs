@@ -47,65 +47,82 @@ public enum GWL
 
 public class ProcessesService
 {
+    private static Dictionary<int, Icon?> iconeCache = new Dictionary<int, Icon?>();
+    private static object mutex = new object();
+
     public ProcessInfo[] GetApplications()
     {
-        List<WinStruct> windows = Win32Helpers.GetWindows();
-        var windowsByProcess = new Dictionary<uint, List<WinStruct>>();
-
-        foreach (WinStruct win in windows)
+        lock (mutex)
         {
-            if (windowsByProcess.ContainsKey(win.idProcess))
-                windowsByProcess[win.idProcess].Add(win);
-            else
-                windowsByProcess.Add(win.idProcess, new List<WinStruct>() { win });
-        }
+            List<WinStruct> windows = Win32Helpers.GetWindows();
+            var windowsByProcess = new Dictionary<uint, List<WinStruct>>();
 
-        var result = new List<ProcessInfo>();
-        foreach (Process p in Process.GetProcesses("."))
-        {
-            try
+            foreach (WinStruct win in windows)
             {
-                if (p.MainWindowTitle.Length > 0 || p.ProcessName == "explorer")
-                {
-                    // RegisterHook((uint)p.Id);
-
-                    Icon? ico = null;
-                    if (p.MainModule?.FileName != null)
-                        ico = Icon.ExtractAssociatedIcon(p.MainModule.FileName);
-
-                    var processInfo = new ProcessInfo(p.MainWindowTitle, p.ProcessName, p.Id, new List<WinStruct>(), ico);
-
-                    if (windowsByProcess.ContainsKey((uint)p.Id))
-                    {
-                        processInfo = processInfo with { windows = windowsByProcess[(uint)p.Id] };
-                        windowsByProcess.Remove((uint)p.Id);
-                    }
-
-                    result.Add(processInfo);
-                }
-                /*
+                if (windowsByProcess.ContainsKey(win.idProcess))
+                    windowsByProcess[win.idProcess].Add(win);
                 else
-                {
-                    Debug.WriteLine($"- Process {p.Id} - ProcessName={p.ProcessName} - SessionId={p.SessionId}");
-                }
-                */
+                    windowsByProcess.Add(win.idProcess, new List<WinStruct>() { win });
             }
-            catch (Exception ex)
+
+            var result = new List<ProcessInfo>();
+            foreach (Process p in Process.GetProcesses("."))
             {
-                // TODO: Err handling
-                Console.WriteLine($"{ex.GetType().Name} - {ex.Message} - {ex.StackTrace}");
-                Debug.WriteLine($"{ex.GetType().Name} - {ex.Message} - {ex.StackTrace}");
+                try
+                {
+                    if (p.MainWindowTitle.Length > 0 || p.ProcessName == "explorer")
+                    {
+                        // RegisterHook((uint)p.Id);
+
+                        Icon? ico = null;
+                        if (iconeCache.ContainsKey(p.Id))
+                        {
+                            ico = iconeCache[p.Id];
+                        }
+                        else
+                        {
+                            if (p.MainModule?.FileName != null)
+                            {
+                                try
+                                {
+                                    ico = Icon.ExtractAssociatedIcon(p.MainModule.FileName);
+                                }
+                                catch (Exception) { }
+                            }
+
+                            iconeCache[p.Id] = ico;
+                        }
+
+                        var processInfo = new ProcessInfo(p.MainWindowTitle, p.ProcessName, p.Id, new List<WinStruct>(), ico);
+
+                        if (windowsByProcess.ContainsKey((uint)p.Id))
+                        {
+                            processInfo = processInfo with { windows = windowsByProcess[(uint)p.Id] };
+                            windowsByProcess.Remove((uint)p.Id);
+                        }
+
+                        result.Add(processInfo);
+                    }
+                    /*
+                    else
+                    {
+                        Debug.WriteLine($"- Process {p.Id} - ProcessName={p.ProcessName} - SessionId={p.SessionId}");
+                    }
+                    */
+                }
+                catch (Exception ex)
+                {
+                    // TODO: Err handling
+                    Console.WriteLine($"{ex.GetType().Name} - {ex.Message} - {ex.StackTrace}");
+                    Debug.WriteLine($"{ex.GetType().Name} - {ex.Message} - {ex.StackTrace}");
+                }
             }
+
+            //string json = JsonConvert.SerializeObject(result); //, Formatting.Indented);
+            //Debug.WriteLine("[GetApplications] result = " + json);
+
+            return result.ToArray();
         }
-
-        string json = JsonConvert.SerializeObject(result); //, Formatting.Indented);
-        Debug.WriteLine("[GetApplications] result = " + json);
-
-        //Debug.WriteLine("======== remainingWindows =========");
-        //string remainingWindows = JsonConvert.SerializeObject(windowsByProcess, Formatting.Indented);
-        //Debug.WriteLine(remainingWindows);
-
-        return result.ToArray();
     }
 
     public void BringToFront(int idProcess, IntPtr handle)
