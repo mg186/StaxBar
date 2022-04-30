@@ -28,6 +28,12 @@ public class EventWatcherAsync
     public EventWatcherAsync(Action refreshCallback)
     {
         this.refreshCallback = refreshCallback;
+        WatchCreation();
+        WatchDeletion();
+    }
+
+    protected void WatchCreation()
+    {
         try
         {
             string ComputerName = "localhost";
@@ -50,8 +56,36 @@ public class EventWatcherAsync
         catch (Exception e)
         {
             Console.WriteLine("Exception {0} Trace {1}", e.Message, e.StackTrace);
+            Debug.WriteLine("Exception {0} Trace {1}", e.Message, e.StackTrace);
         }
+    }
 
+    protected void WatchDeletion()
+    {
+        try
+        {
+            string ComputerName = "localhost";
+            string WmiQuery;
+            ManagementEventWatcher Watcher;
+            ManagementScope Scope;
+
+            Scope = new ManagementScope(String.Format("\\\\{0}\\root\\CIMV2", ComputerName), null);
+            Scope.Connect();
+
+            WmiQuery = "Select * From __InstanceDeletionEvent Within 1 " +
+            "Where TargetInstance ISA 'Win32_Process' ";
+
+            Watcher = new ManagementEventWatcher(Scope, new EventQuery(WmiQuery));
+            Watcher.EventArrived += new EventArrivedEventHandler(this.WmiEventHandler);
+            Watcher.Start();
+            //Console.Read();
+            //Watcher.Stop();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("Exception {0} Trace {1}", e.Message, e.StackTrace);
+            Debug.WriteLine("Exception {0} Trace {1}", e.Message, e.StackTrace);
+        }
     }
 
 }
