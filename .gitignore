@@ -3,6 +3,6 @@
 ################################################################################
 
 /.vs/
-/CsTests/bin/Debug
+/CsTests/bin
 /CsTests/obj
 /CsTests/StaxBar.csproj.user

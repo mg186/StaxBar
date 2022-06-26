@@ -47,11 +47,93 @@ public enum GWL
 
 public class ProcessesService
 {
+    private static HashSet<int> ignoreProcessCache = new HashSet<int>();
     private static Dictionary<int, Icon?> iconeCache = new Dictionary<int, Icon?>();
     private static object mutex = new object();
 
+    private static readonly HashSet<string> processesToIgnore = new HashSet<string>(new[]
+    {
+        "svchost",
+        "winlogon",
+        "Idle",
+        "System",
+        "Secure System",
+        "Registry",
+        "wininit",
+        "csrss",
+        "winlogon",
+        "services",
+        "LsaIso",
+        "lsass",
+        "fontdrvhost",
+        "dwm",
+        "Memory Compression",
+        "sched",
+        "WmiPrvSE",
+        "AppleMobileDeviceService",
+        "IpOverUsbSvc",
+        "ServiceLayer",
+        "nvcontainer",
+        "armsvc",
+        "rundll32",
+        "gamingservices",
+        "gamingservicesnet",
+        "taskhostw",
+        "ctfmon",
+        "RtWlan",
+        "SwUSB",
+        "RuntimeBroker",
+        "SettingSyncHost",
+        "GoogleCrashHandler",
+        "SecurityHealthSystray",
+        "SecurityHealthService",
+        "NVIDIA Share",
+        "SgrmBroker",
+        "UserOOBEBroker",
+        "ShellExperienceHost",
+        "Microsoft.ServiceHub.Controller",
+        "PerfWatson2",
+        "ServiceHub.IdentityHost",
+        "msedgewebview2",
+        "StandardCollector.Service",
+        "CompPkgSrv",
+        "SystemSettingsBroker",
+        "NVIDIA Web Helper",
+        "conhost",
+        "RtlService",
+        "dasHost",
+        "spoolsv",
+        "NVDisplay.Container",
+        "smss",
+        "GoogleCrashHandler64",
+        "steamwebhelper",
+        "SearchIndexer",
+        "EpicWebHelper",
+        "ServiceHub.RoslynCodeAnalysisService",
+        "ServiceHub.ThreadedWaitDialog",
+        "ServiceHub.Host.CLR.x86",
+        "ServiceHub.SettingsHost",
+        "ServiceHub.Host.CLR",
+        "ServiceHub.IndexingService",
+        "VBCSCompiler",
+        "MSBuild",
+        "smartscreen",
+        "SearchApp",
+        "nvsphelper64",
+        "sihost",
+        "TracSrvWrapper",
+        "TeamViewer_Service",
+        "mDNSResponder",
+        "TSVNCache",
+        "StartMenuExperienceHost",
+        "YourPhone"
+    });
+
     public ProcessInfo[] GetApplications()
     {
+        Stopwatch sw = new Stopwatch();
+        sw.Start();
+        
         lock (mutex)
         {
             List<WinStruct> windows = Win32Helpers.GetWindows();
@@ -70,7 +152,25 @@ public class ProcessesService
             {
                 try
                 {
-                    if (p.MainWindowTitle.Length > 0 || p.ProcessName == "explorer")
+                    if (ignoreProcessCache.Contains(p.Id))
+                        continue;
+
+                    if (processesToIgnore.Contains(p.ProcessName))
+                    {
+                        ignoreProcessCache.Add(p.Id);
+                        continue;
+                    }
+
+                    // ***BOTTLENECK*** MainWindowTitle is slow
+                    //string filename = null;
+                    //try
+                    //{
+                    //    filename = p.MainModule?.FileName;
+                    //}
+                    //catch { }
+                    //
+                    //Debug.WriteLine($"[{p.Id}] p.ProcessName='{p.ProcessName}', p.MainWindowTitle='{p.MainWindowTitle}, fileName='{filename}''");
+                    if (p.ProcessName == "explorer" || p.MainWindowTitle.Length > 0)
                     {
                         // RegisterHook((uint)p.Id);
 
@@ -103,12 +203,11 @@ public class ProcessesService
 
                         result.Add(processInfo);
                     }
-                    /*
                     else
                     {
-                        Debug.WriteLine($"- Process {p.Id} - ProcessName={p.ProcessName} - SessionId={p.SessionId}");
+                        ignoreProcessCache.Add(p.Id);
+                        //Debug.WriteLine($"- Process {p.Id} - ProcessName={p.ProcessName} - SessionId={p.SessionId}");
                     }
-                    */
                 }
                 catch (Exception ex)
                 {
@@ -121,6 +220,8 @@ public class ProcessesService
             //string json = JsonConvert.SerializeObject(result); //, Formatting.Indented);
             //Debug.WriteLine("[GetApplications] result = " + json);
 
+            sw.Stop();
+            Debug.WriteLine($"[GetApplications] stopwatch : {sw.ElapsedMilliseconds} ms");
             return result.ToArray();
         }
     }

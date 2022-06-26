@@ -1,4 +1,6 @@
-﻿namespace StaxBar;
+﻿using System.Diagnostics;
+
+namespace StaxBar;
 
 public class ProcessesPaneUI : Form
 {
@@ -34,7 +36,9 @@ public class ProcessesPaneUI : Form
 
     private void UpdateProcessList()
     {
+        Debug.WriteLine($"UpdateProcessList start : {DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}");
         this.processWindows = this.processesService.GetTopLevelWindows().ToArray();
+        Debug.WriteLine($"UpdateProcessList end : {DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}");
     }
 
     // TODO: ce hash a un risque de collision élevé
